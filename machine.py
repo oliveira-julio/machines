@@ -50,6 +50,64 @@ def move_right(state: State) -> State:
     return state._replace(index=state.index + 1)
 
 
+def copy_cell(state: State) -> State:
+    """
+    Copy value of cell to acc. The old acc value is lost.
+
+    Examples:
+    copy_cell(State(acc=None, index=0, array=[1], array_len=1))
+    == State(acc=1, index=0, array=[1], array_len=1)
+
+    copy_cell(State(acc=1, index=0, array=[None], array_len=1))
+    == State(acc=None, index=0, array=[None], array_len=1)
+
+    copy_cell(State(acc='a', index=1, array=['a', 'b', 'c'], array_len=3))
+    == State(acc='b', index=1, array=['a', 'b', 'c'], array_len=3)
+    """
+    assert state.index < state.array_len
+    return state._replace(acc=state.array[state.index])
+
+
+def erase_cell(state: State) -> State:
+    """
+    Erase value of cell. The cell value is lost.
+
+    Examples:
+    erase_cell(State(acc=None, index=0, array=[1], array_len=1))
+    == State(acc=None, index=0, array=[None], array_len=1)
+
+    erase_cell(State(acc=None, index=0, array=[None], array_len=1))
+    == State(acc=None, index=0, array=[None], array_len=1)
+
+    erase_cell(State(acc=None, index=1, array=['a', 'b', 'c'], array_len=3))
+    == State(acc=None, index=1, array=['a', None, 'c'], array_len=3)
+    """
+    assert state.index < state.array_len
+    return state._replace(
+        array=state.array[: state.index] + [None] + state.array[state.index + 1 :]
+    )
+
+
+def set_cell(state: State) -> State:
+    """
+    Erase value of cell. The cell value is lost.
+
+    Examples:
+    set_cell(State(acc=None, index=0, array=[1], array_len=1))
+    == State(acc=None, index=0, array=[None], array_len=1)
+
+    set_cell(State(acc=1, index=0, array=[None], array_len=1))
+    == State(acc=1, index=0, array=[1], array_len=1)
+
+    set_cell(State(acc='b', index=1, array=['a', 'b', 'c'], array_len=3))
+    == State(acc='b', index=1, array=['a', 'b', 'c'], array_len=3)
+    """
+    assert state.index < state.array_len
+    return state._replace(
+        array=state.array[: state.index] + [state.acc] + state.array[state.index + 1 :]
+    )
+
+
 def lazy_eval(state: State, funcs):
     yield "init", state
     for func in funcs:
@@ -59,9 +117,30 @@ def lazy_eval(state: State, funcs):
 
 
 if __name__ == "__main__":
-    DEFAULT = State(array=[None, None, None], array_len=3)
+    DEFAULT = State(array=["a", "b", "c", None], array_len=4)
 
-    program = [move_right, move_right, move_right, move_left, move_left, move_left]
+    # inverse abc -> cba
+    program = [
+        copy_cell,
+        erase_cell,
+        move_right,
+        move_right,
+        move_right,
+        set_cell,
+        move_left,
+        copy_cell,
+        erase_cell,
+        move_left,
+        move_left,
+        set_cell,
+        move_right,
+        move_right,
+        move_right,
+        copy_cell,
+        erase_cell,
+        move_left,
+        set_cell,
+    ]
     old = DEFAULT
     for name, state in lazy_eval(DEFAULT, program):
         print("%10s %s" % (name, old))
